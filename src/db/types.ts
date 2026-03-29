@@ -7,6 +7,7 @@ export type ItemRow = {
   content_extract: string | null;
   summary: string | null;
   embedding: Uint8Array | null;
+  error_details: string | null;
   source: ItemSource;
   source_context: string | null;
   captured_at: string;

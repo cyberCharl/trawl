@@ -9,6 +9,7 @@ export const schemaStatements = [
       content_extract TEXT,
       summary TEXT,
       embedding BLOB,
+      error_details TEXT,
       source TEXT NOT NULL DEFAULT 'api' CHECK (source IN ('extension', 'telegram-user', 'telegram-agent', 'api', 'agent')),
       source_context TEXT,
       captured_at TEXT NOT NULL,
@@ -40,6 +41,7 @@ export const schemaStatements = [
     )
   `,
   "CREATE INDEX IF NOT EXISTS idx_items_status ON items(status)",
+  "CREATE INDEX IF NOT EXISTS idx_item_tags_item_id ON item_tags(item_id)",
   "CREATE INDEX IF NOT EXISTS idx_item_tags_tag_id ON item_tags(tag_id)",
   "CREATE INDEX IF NOT EXISTS idx_edges_target_item_id ON edges(target_item_id)",
 ] as const;

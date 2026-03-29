@@ -19,6 +19,17 @@ function loadSqliteVecExtension(db: Database): void {
   loadSqliteVec(db);
 }
 
+function columnExists(db: Database, tableName: string, columnName: string): boolean {
+  const columns = db.query(`PRAGMA table_info(${tableName})`).all() as Array<{ name: string }>;
+  return columns.some((column) => column.name === columnName);
+}
+
+function runMigrations(db: Database): void {
+  if (!columnExists(db, "items", "error_details")) {
+    db.run("ALTER TABLE items ADD COLUMN error_details TEXT");
+  }
+}
+
 function initializeDatabase(): Database {
   ensureDatabaseDirectory(config.dbPath);
 
@@ -32,6 +43,8 @@ function initializeDatabase(): Database {
   for (const statement of schemaStatements) {
     db.run(statement);
   }
+
+  runMigrations(db);
 
   return db;
 }

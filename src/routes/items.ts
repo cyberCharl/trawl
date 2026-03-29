@@ -1,7 +1,12 @@
 import { Hono } from "hono";
 
 import { ITEM_SOURCES } from "../constants";
-import { createPendingItem, findItemByUrl, touchExistingItem } from "../db/items";
+import {
+  createPendingItem,
+  findItemByUrl,
+  resetFailedItemToPending,
+  touchExistingItem,
+} from "../db/items";
 import { captureQueue } from "../queue";
 
 type CreateItemBody = {
@@ -56,7 +61,12 @@ itemRoutes.post("/", async (c) => {
   const existingItem = findItemByUrl(body.url);
 
   if (existingItem) {
-    touchExistingItem(existingItem.id, capturedAt);
+    if (existingItem.status === "failed") {
+      resetFailedItemToPending(existingItem.id, capturedAt);
+    } else {
+      touchExistingItem(existingItem.id, capturedAt);
+    }
+
     captureQueue.enqueue(existingItem.id);
 
     return c.json(
@@ -64,6 +74,8 @@ itemRoutes.post("/", async (c) => {
         item: {
           ...existingItem,
           captured_at: capturedAt,
+          error_details: existingItem.status === "failed" ? null : existingItem.error_details,
+          status: existingItem.status === "failed" ? "pending" : existingItem.status,
         },
       },
       200,

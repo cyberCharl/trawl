@@ -2,6 +2,8 @@ import { EventEmitter } from "node:events";
 
 type QueueEvents = {
   "item:queued": [itemId: string];
+  "item:processed": [itemId: string];
+  "item:failed": [itemId: string, errorDetails: string];
 };
 
 class CaptureQueue {
@@ -10,6 +12,15 @@ class CaptureQueue {
   enqueue(itemId: string): void {
     queueMicrotask(() => {
       this.emitter.emit("item:queued", itemId);
+    });
+  }
+
+  emit<EventName extends keyof QueueEvents>(
+    eventName: EventName,
+    ...args: QueueEvents[EventName]
+  ): void {
+    queueMicrotask(() => {
+      this.emitter.emit(eventName, ...args);
     });
   }
 
