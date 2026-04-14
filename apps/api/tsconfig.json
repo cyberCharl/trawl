@@ -1,0 +1,10 @@
+{
+  "extends": "@trawl/typescript-config/bun.json",
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": [
+    "src/**/*.ts"
+  ]
+}

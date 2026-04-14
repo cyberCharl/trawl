@@ -1,0 +1,30 @@
+{
+  "name": "api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "build": "mkdir -p dist && tsc --noEmit && touch dist/.build",
+    "lint": "eslint .",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mozilla/readability": "^0.6.0",
+    "hono": "latest",
+    "linkedom": "^0.18.12",
+    "nanoid": "latest",
+    "sqlite-vec": "latest"
+  },
+  "devDependencies": {
+    "@trawl/eslint-config": "workspace:*",
+    "@trawl/typescript-config": "workspace:*",
+    "@types/node": "latest",
+    "bun-types": "latest",
+    "eslint": "^9.39.2",
+    "prettier": "^3.8.1",
+    "typescript": "^5.9.3"
+  }
+}

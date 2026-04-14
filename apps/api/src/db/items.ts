@@ -178,7 +178,8 @@ const insertItemTagStatement = db.prepare(
 );
 
 function toItemResponse(item: ItemRow): ItemResponse {
-  const { embedding: _embedding, ...response } = item;
+  const { embedding, ...response } = item;
+  void embedding;
   return response;
 }
 
