@@ -1,0 +1,24 @@
+{
+  "name": "obsidian-plugin",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bunx esbuild src/main.ts --bundle --outfile=main.js --external:obsidian --format=cjs --platform=node --target=es2020 --tsconfig=tsconfig.json --sourcemap --watch",
+    "build": "bunx esbuild src/main.ts --bundle --outfile=main.js --external:obsidian --format=cjs --platform=node --target=es2020 --tsconfig=tsconfig.json",
+    "package": "bun run build && rm -rf dist && mkdir -p dist && cp manifest.json versions.json main.js dist/ && cd dist && zip -r trawl-obsidian-plugin.zip manifest.json main.js versions.json",
+    "lint": "eslint .",
+    "format": "prettier --write \"src/**/*.ts\" README.md manifest.json versions.json",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@trawl/eslint-config": "workspace:*",
+    "@trawl/typescript-config": "workspace:*",
+    "@types/node": "^25.1.0",
+    "esbuild": "^0.25.11",
+    "eslint": "^9.39.2",
+    "obsidian": "^1.8.10",
+    "prettier": "^3.8.1",
+    "typescript": "^5.9.3"
+  }
+}

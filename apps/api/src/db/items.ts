@@ -1,6 +1,6 @@
 import { nanoid } from "nanoid";
 
-import type { ItemSource } from "../constants";
+import type { ItemSource, ItemStatus } from "../constants";
 import { db } from "./client";
 import type { ItemResponse, ItemRow } from "./types";
 
@@ -9,178 +9,148 @@ type TagRow = {
   slug: string;
 };
 
-const selectItemByUrlStatement = db.prepare(
-  `
-    SELECT
-      id,
-      url,
-      title,
-      content_extract,
-      summary,
-      embedding,
-      error_details,
-      source,
-      source_context,
-      captured_at,
-      processed_at,
-      status
-    FROM items
-    WHERE url = ?
-  `,
-);
+type CountRow = {
+  total: number;
+};
 
-const selectItemByIdStatement = db.prepare(
-  `
-    SELECT
-      id,
-      url,
-      title,
-      content_extract,
-      summary,
-      embedding,
-      error_details,
-      source,
-      source_context,
-      captured_at,
-      processed_at,
-      status
-    FROM items
-    WHERE id = ?
-  `,
-);
+const ITEM_COLUMNS = `
+  id,
+  url,
+  title,
+  content_extract,
+  summary,
+  embedding,
+  error_details,
+  source,
+  source_context,
+  captured_at,
+  last_seen_at,
+  processed_at,
+  status,
+  obsidian_note_id
+`;
 
-const selectPendingItemIdsStatement = db.prepare(
-  `
-    SELECT id
-    FROM items
-    WHERE status = 'pending'
-    ORDER BY captured_at ASC
-  `,
-);
+const selectItemByUrlStatement = db.prepare(`
+  SELECT ${ITEM_COLUMNS}
+  FROM items
+  WHERE url = ?
+`);
 
-const insertItemStatement = db.prepare(
-  `
-    INSERT INTO items (
-      id,
-      url,
-      source,
-      source_context,
-      captured_at,
-      status
-    ) VALUES (?, ?, ?, ?, ?, 'pending')
-  `,
-);
+const selectItemByIdStatement = db.prepare(`
+  SELECT ${ITEM_COLUMNS}
+  FROM items
+  WHERE id = ?
+`);
 
-const updateCapturedAtStatement = db.prepare(
-  `
-    UPDATE items
-    SET captured_at = ?
-    WHERE id = ?
-  `,
-);
+const insertItemStatement = db.prepare(`
+  INSERT INTO items (
+    id,
+    url,
+    source,
+    source_context,
+    captured_at,
+    last_seen_at,
+    status
+  ) VALUES (?, ?, ?, ?, ?, ?, 'pending')
+`);
 
-const resetFailedItemStatement = db.prepare(
-  `
-    UPDATE items
-    SET
-      captured_at = ?,
-      processed_at = NULL,
-      status = 'pending',
-      error_details = NULL
-    WHERE id = ?
-  `,
-);
+const updateLastSeenStatement = db.prepare(`
+  UPDATE items
+  SET last_seen_at = ?
+  WHERE id = ?
+`);
 
-const updateExtractedContentStatement = db.prepare(
-  `
-    UPDATE items
-    SET
-      title = ?,
-      content_extract = ?
-    WHERE id = ?
-  `,
-);
+const resetFailedItemStatement = db.prepare(`
+  UPDATE items
+  SET
+    processed_at = NULL,
+    status = 'pending',
+    error_details = NULL
+  WHERE id = ?
+`);
 
-const updateSummaryStatement = db.prepare(
-  `
-    UPDATE items
-    SET summary = ?
-    WHERE id = ?
-  `,
-);
+const updateExtractedContentStatement = db.prepare(`
+  UPDATE items
+  SET
+    title = ?,
+    content_extract = ?
+  WHERE id = ?
+`);
 
-const updateEmbeddingStatement = db.prepare(
-  `
-    UPDATE items
-    SET embedding = ?
-    WHERE id = ?
-  `,
-);
+const updateSummaryStatement = db.prepare(`
+  UPDATE items
+  SET summary = ?
+  WHERE id = ?
+`);
 
-const markProcessedStatement = db.prepare(
-  `
-    UPDATE items
-    SET
-      status = 'processed',
-      processed_at = ?,
-      error_details = NULL
-    WHERE id = ?
-  `,
-);
+const markProcessedStatement = db.prepare(`
+  UPDATE items
+  SET
+    status = 'processed',
+    processed_at = ?,
+    error_details = NULL
+  WHERE id = ?
+`);
 
-const markFailedStatement = db.prepare(
-  `
-    UPDATE items
-    SET
-      status = 'failed',
-      processed_at = NULL,
-      error_details = ?
-    WHERE id = ?
-  `,
-);
+const markFailedStatement = db.prepare(`
+  UPDATE items
+  SET
+    status = 'failed',
+    processed_at = NULL,
+    error_details = ?
+  WHERE id = ?
+`);
 
-const selectAllTagSlugsStatement = db.prepare(
-  `
-    SELECT slug
-    FROM tags
-    ORDER BY slug ASC
-  `,
-);
+const selectAllTagSlugsStatement = db.prepare(`
+  SELECT slug
+  FROM tags
+  ORDER BY slug ASC
+`);
 
-const insertTagStatement = db.prepare(
-  `
-    INSERT INTO tags (name, slug)
-    VALUES (?, ?)
-    ON CONFLICT(slug) DO NOTHING
-  `,
-);
+const selectItemTagsStatement = db.prepare(`
+  SELECT tags.slug AS slug
+  FROM item_tags
+  INNER JOIN tags ON tags.id = item_tags.tag_id
+  WHERE item_tags.item_id = ?
+  ORDER BY tags.slug ASC
+`);
 
-const selectTagBySlugStatement = db.prepare(
-  `
-    SELECT id, slug
-    FROM tags
-    WHERE slug = ?
-  `,
-);
+const insertTagStatement = db.prepare(`
+  INSERT INTO tags (name, slug)
+  VALUES (?, ?)
+  ON CONFLICT(slug) DO NOTHING
+`);
 
-const deleteItemTagsStatement = db.prepare(
-  `
-    DELETE FROM item_tags
-    WHERE item_id = ?
-  `,
-);
+const selectTagBySlugStatement = db.prepare(`
+  SELECT id, slug
+  FROM tags
+  WHERE slug = ?
+`);
 
-const insertItemTagStatement = db.prepare(
-  `
-    INSERT OR IGNORE INTO item_tags (item_id, tag_id)
-    VALUES (?, ?)
-  `,
-);
+const deleteItemTagsStatement = db.prepare(`
+  DELETE FROM item_tags
+  WHERE item_id = ?
+`);
+
+const insertItemTagStatement = db.prepare(`
+  INSERT OR IGNORE INTO item_tags (item_id, tag_id)
+  VALUES (?, ?)
+`);
+
+function getItemTags(itemId: string): string[] {
+  const rows = selectItemTagsStatement.all(itemId) as Array<{ slug: string }>;
+  return rows.map((row) => row.slug);
+}
 
 function toItemResponse(item: ItemRow): ItemResponse {
-  const { embedding, ...response } = item;
+  const { content_extract, embedding, ...response } = item;
+  void content_extract;
   void embedding;
-  return response;
+
+  return {
+    ...response,
+    tags: getItemTags(item.id),
+  };
 }
 
 export function findItemByUrl(url: string): ItemResponse | null {
@@ -188,12 +158,13 @@ export function findItemByUrl(url: string): ItemResponse | null {
   return item ? toItemResponse(item) : null;
 }
 
-export function touchExistingItem(id: string, capturedAt: string): void {
-  updateCapturedAtStatement.run(capturedAt, id);
+export function getItemById(id: string): ItemRow | null {
+  return (selectItemByIdStatement.get(id) as ItemRow | undefined) ?? null;
 }
 
-export function resetFailedItemToPending(id: string, capturedAt: string): void {
-  resetFailedItemStatement.run(capturedAt, id);
+export function getPublicItemById(id: string): ItemResponse | null {
+  const item = getItemById(id);
+  return item ? toItemResponse(item) : null;
 }
 
 export function createPendingItem(params: {
@@ -210,24 +181,57 @@ export function createPendingItem(params: {
     params.source,
     params.sourceContext,
     params.capturedAt,
+    params.capturedAt,
   );
 
-  const item = selectItemByUrlStatement.get(params.url) as ItemRow | undefined;
+  const item = getPublicItemById(id);
 
   if (!item) {
     throw new Error("Failed to fetch newly created item");
   }
 
-  return toItemResponse(item);
+  return item;
 }
 
-export function getItemById(id: string): ItemRow | null {
-  return (selectItemByIdStatement.get(id) as ItemRow | undefined) ?? null;
+export function touchExistingItem(id: string, lastSeenAt: string): void {
+  updateLastSeenStatement.run(lastSeenAt, id);
 }
 
-export function listPendingItemIds(): string[] {
-  const rows = selectPendingItemIdsStatement.all() as Array<{ id: string }>;
-  return rows.map((row) => row.id);
+export function resetFailedItemToPending(id: string): void {
+  resetFailedItemStatement.run(id);
+}
+
+export function listItems(params: {
+  status?: ItemStatus;
+  limit: number;
+  offset: number;
+}): { items: ItemResponse[]; total: number } {
+  const whereClause = params.status ? "WHERE status = ?" : "";
+  const sql = `
+    SELECT ${ITEM_COLUMNS}
+    FROM items
+    ${whereClause}
+    ORDER BY last_seen_at DESC, captured_at DESC, id DESC
+    LIMIT ? OFFSET ?
+  `;
+  const countSql = `
+    SELECT COUNT(*) AS total
+    FROM items
+    ${whereClause}
+  `;
+  const statement = db.query(sql);
+  const countStatement = db.query(countSql);
+  const queryParams = params.status
+    ? [params.status, params.limit, params.offset]
+    : [params.limit, params.offset];
+  const countParams = params.status ? [params.status] : [];
+  const rows = statement.all(...queryParams) as ItemRow[];
+  const totalRow = countStatement.get(...countParams) as CountRow | undefined;
+
+  return {
+    items: rows.map((row) => toItemResponse(row)),
+    total: totalRow?.total ?? 0,
+  };
 }
 
 export function saveExtractedContent(
@@ -240,10 +244,6 @@ export function saveExtractedContent(
 
 export function saveSummary(itemId: string, summary: string): void {
   updateSummaryStatement.run(summary, itemId);
-}
-
-export function saveEmbedding(itemId: string, embedding: Uint8Array): void {
-  updateEmbeddingStatement.run(embedding, itemId);
 }
 
 export function markItemProcessed(itemId: string, processedAt: string): void {
@@ -276,5 +276,58 @@ const replaceItemTagsTransaction = db.transaction((itemId: string, tagSlugs: str
 });
 
 export function replaceItemTags(itemId: string, tagSlugs: string[]): void {
-  replaceItemTagsTransaction(itemId, tagSlugs);
+  replaceItemTagsTransaction(itemId, Array.from(new Set(tagSlugs)));
+}
+
+export function updateItemById(params: {
+  id: string;
+  status?: ItemStatus;
+  sourceContext?: string | null;
+  obsidianNoteId?: string | null;
+  tags?: string[];
+}): ItemResponse | null {
+  const currentItem = getItemById(params.id);
+
+  if (!currentItem) {
+    return null;
+  }
+
+  const assignments: string[] = [];
+  const values: Array<string | null> = [];
+
+  if (params.status !== undefined) {
+    assignments.push("status = ?");
+    values.push(params.status);
+
+    if (params.status === "processed") {
+      assignments.push("processed_at = ?");
+      values.push(currentItem.processed_at ?? new Date().toISOString());
+      assignments.push("error_details = NULL");
+    } else if (params.status === "pending") {
+      assignments.push("processed_at = NULL");
+      assignments.push("error_details = NULL");
+    } else if (params.status === "failed") {
+      assignments.push("processed_at = NULL");
+    }
+  }
+
+  if (params.sourceContext !== undefined) {
+    assignments.push("source_context = ?");
+    values.push(params.sourceContext);
+  }
+
+  if (params.obsidianNoteId !== undefined) {
+    assignments.push("obsidian_note_id = ?");
+    values.push(params.obsidianNoteId);
+  }
+
+  if (assignments.length > 0) {
+    db.query(`UPDATE items SET ${assignments.join(", ")} WHERE id = ?`).run(...values, params.id);
+  }
+
+  if (params.tags !== undefined) {
+    replaceItemTags(params.id, params.tags);
+  }
+
+  return getPublicItemById(params.id);
 }

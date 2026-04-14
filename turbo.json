@@ -4,6 +4,8 @@
   "globalEnv": [
     "PORT",
     "API_KEY",
+    "TRAWL_API_KEY",
+    "TRAWL_API_URL",
     "DB_PATH",
     "OLLAMA_URL",
     "SUMMARY_MODEL",
@@ -15,7 +17,7 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
+      "outputs": ["dist/**", "main.js", ".next/**", "!.next/cache/**"]
     },
     "lint": {
       "dependsOn": ["^lint"]
@@ -25,6 +27,10 @@
     },
     "typecheck": {
       "dependsOn": ["^typecheck"]
+    },
+    "test": {
+      "dependsOn": ["^test"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"]
     },
     "dev": {
       "cache": false,

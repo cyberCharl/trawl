@@ -29,6 +29,8 @@ coverage
 out/
 build
 dist
+apps/obsidian-plugin/main.js
+apps/obsidian-plugin/main.js.map
 
 # Debug
 npm-debug.log*

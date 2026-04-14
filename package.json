@@ -14,10 +14,14 @@
     "dev": "turbo dev",
     "dev:web": "turbo dev --filter=web",
     "dev:api": "turbo dev --filter=api",
+    "dev:obsidian-plugin": "turbo dev --filter=obsidian-plugin",
     "build": "turbo build",
+    "build:obsidian-plugin": "turbo build --filter=obsidian-plugin",
     "lint": "turbo lint",
     "format": "turbo format",
-    "typecheck": "turbo typecheck"
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "test:api": "turbo test --filter=api"
   },
   "devDependencies": {
     "prettier": "^3.8.1",

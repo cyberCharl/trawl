@@ -1,0 +1,10 @@
+{
+  "id": "trawl-obsidian",
+  "name": "Trawl",
+  "version": "0.0.1",
+  "minAppVersion": "1.5.0",
+  "description": "Browse items captured in Trawl and queue deliberate processing from inside Obsidian.",
+  "author": "Charl Botha",
+  "authorUrl": "https://github.com/charlbotha",
+  "isDesktopOnly": false
+}

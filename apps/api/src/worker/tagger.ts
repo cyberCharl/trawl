@@ -3,7 +3,7 @@ import { config } from "../config";
 import { chatWithOllama } from "./ollama";
 
 const MAX_TAG_INPUT = 600;
-const SOURCE_CONTEXT_SOURCES = new Set(["telegram-agent", "agent"]);
+const SOURCE_CONTEXT_SOURCES = new Set(["agent"]);
 const STOP_WORDS = new Set([
   "about",
   "after",
@@ -153,10 +153,7 @@ function buildHeuristicTags(params: {
   const words = combinedText
     .split(/\s+/)
     .map((word) => word.trim())
-    .filter(
-      (word) =>
-        word.length >= 3 && !STOP_WORDS.has(word) && !/^\d+$/.test(word),
-    );
+    .filter((word) => word.length >= 3 && !STOP_WORDS.has(word) && !/^\d+$/.test(word));
 
   const frequencies = new Map<string, number>();
 
@@ -197,7 +194,7 @@ export async function autoTagItem(params: {
     "Choose 2 to 5 domain-oriented tags for this captured item.",
     "Prefer existing taxonomy slugs when they fit. You may propose new slugs if needed.",
     "Avoid structural tags like article, blog, link, summary, note, or reading-list.",
-    "Return JSON only in the form {\"tags\":[\"tag-one\",\"tag-two\"]}.",
+    'Return JSON only in the form {"tags":["tag-one","tag-two"]}.',
     "",
     params.taxonomy.length > 0
       ? `Existing taxonomy: ${params.taxonomy.join(", ")}`

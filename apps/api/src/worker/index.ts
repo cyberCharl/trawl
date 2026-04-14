@@ -1,20 +1,16 @@
 import { config } from "../config";
 import {
   getItemById,
-  listPendingItemIds,
   listTagTaxonomy,
   markItemFailed,
   markItemProcessed,
   replaceItemTags,
-  saveEmbedding,
   saveExtractedContent,
   saveSummary,
 } from "../db/items";
 import { captureQueue } from "../queue";
-import { generateEmbedding } from "./embedder";
 import { fetchAndExtract } from "./fetcher";
-import { rebuildGraphEdges } from "./graph";
-import { warmChatModel, warmEmbedModel } from "./ollama";
+import { warmChatModel } from "./ollama";
 import { summariseItem } from "./summariser";
 import { autoTagItem } from "./tagger";
 
@@ -41,19 +37,14 @@ async function runStage<T>(stageName: string, action: () => Promise<T>): Promise
 
 async function warmWorkerModels(): Promise<void> {
   const chatModels = Array.from(new Set([config.summaryModel, config.taggingModel]));
-
-  const results = await Promise.allSettled([
-    ...chatModels.map((model) => warmChatModel(model)),
-    warmEmbedModel(config.embeddingModel),
-  ]);
+  const results = await Promise.allSettled(chatModels.map((model) => warmChatModel(model)));
 
   for (const [index, result] of results.entries()) {
     if (result.status === "fulfilled") {
       continue;
     }
 
-    const label = index < chatModels.length ? `chat model ${chatModels[index]}` : `embed model ${config.embeddingModel}`;
-    console.warn(`Worker warmup failed for ${label}: ${normalizeError(result.reason)}`);
+    console.warn(`Worker warmup failed for chat model ${chatModels[index]}: ${normalizeError(result.reason)}`);
   }
 }
 
@@ -76,15 +67,6 @@ async function processItem(itemId: string): Promise<void> {
   );
   saveSummary(item.id, summary);
 
-  const embedding = await runStage("embedding", async () =>
-    generateEmbedding({
-      title: extracted.title,
-      summary,
-      content: extracted.content,
-    }),
-  );
-  saveEmbedding(item.id, embedding);
-
   const tags = await runStage("tagging", async () =>
     autoTagItem({
       item,
@@ -95,16 +77,6 @@ async function processItem(itemId: string): Promise<void> {
     }),
   );
   replaceItemTags(item.id, tags);
-
-  await runStage("graph", async () => {
-    rebuildGraphEdges({
-      itemId: item.id,
-      embedding,
-      similarityThreshold: config.similarityThreshold,
-    });
-
-    return undefined;
-  });
 
   markItemProcessed(item.id, new Date().toISOString());
 }
@@ -145,8 +117,4 @@ export async function initializeWorker(): Promise<void> {
   });
 
   await warmWorkerModels();
-
-  for (const itemId of listPendingItemIds()) {
-    captureQueue.enqueue(itemId);
-  }
 }

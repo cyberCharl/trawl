@@ -11,8 +11,12 @@ export type ItemRow = {
   source: ItemSource;
   source_context: string | null;
   captured_at: string;
+  last_seen_at: string;
   processed_at: string | null;
   status: ItemStatus;
+  obsidian_note_id: string | null;
 };
 
-export type ItemResponse = Omit<ItemRow, "embedding">;
+export type ItemResponse = Omit<ItemRow, "content_extract" | "embedding"> & {
+  tags: string[];
+};
