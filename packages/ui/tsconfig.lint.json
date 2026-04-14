@@ -1,8 +1,4 @@
 {
-  "extends": "@workspace/typescript-config/react-library.json",
-  "compilerOptions": {
-    "outDir": "dist"
-  },
-  "include": ["src", "turbo"],
-  "exclude": ["node_modules", "dist"]
+  "extends": "@trawl/typescript-config/react-library.json",
+  "include": ["src/**/*.ts", "src/**/*.tsx", "eslint.config.js"]
 }
