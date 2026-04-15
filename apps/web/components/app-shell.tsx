@@ -1,21 +1,19 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 
-import { Badge } from "@trawl/ui/components/badge";
-import { Button } from "@trawl/ui/components/button";
 import { cn } from "@trawl/ui/lib/utils";
 
 type AppShellProps = {
   current: "capture" | "items";
   title: string;
-  description: string;
+  description?: string;
   eyebrow?: string;
   actions?: ReactNode;
   children: ReactNode;
 };
 
 const navItems = [
-  { href: "/capture", label: "Bulk capture", key: "capture" },
+  { href: "/capture", label: "Capture", key: "capture" },
   { href: "/items", label: "Inbox", key: "items" },
 ] as const;
 
@@ -23,50 +21,61 @@ export function AppShell({
   current,
   title,
   description,
-  eyebrow = "Operational UI",
+  eyebrow,
   actions,
   children,
 }: AppShellProps) {
   return (
-    <main className="min-h-svh bg-[linear-gradient(180deg,rgba(248,250,252,0.92),rgba(241,245,249,0.96))] text-foreground dark:bg-[linear-gradient(180deg,rgba(2,6,23,0.96),rgba(15,23,42,0.98))]">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-6 md:px-10 md:py-10">
-        <header className="overflow-hidden rounded-[28px] border border-border/70 bg-background/90 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur dark:shadow-[0_18px_70px_rgba(2,6,23,0.45)]">
-          <div className="flex flex-col gap-6 px-6 py-6 md:px-8 md:py-8">
-            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="outline">Trawl</Badge>
-                  <Badge variant="secondary">Staging layer upstream of Obsidian</Badge>
-                </div>
-                <div className="space-y-2">
-                  <p className="font-mono text-xs tracking-[0.24em] text-muted-foreground uppercase">
-                    {eyebrow}
-                  </p>
-                  <h1 className="max-w-3xl text-3xl leading-tight font-semibold md:text-4xl">
-                    {title}
-                  </h1>
-                  <p className="max-w-2xl text-sm leading-7 text-muted-foreground md:text-base">
-                    {description}
-                  </p>
-                </div>
-              </div>
-
-              <nav className="flex flex-wrap gap-2">
+    <main className="min-h-svh bg-background text-foreground">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-8 md:px-10 md:py-10">
+        <header className="space-y-7">
+          {/* Top bar: wordmark · nav · actions */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-7">
+              <span className="text-[11px] font-semibold tracking-[0.35em] text-primary">
+                TRAWL
+              </span>
+              <nav className="flex items-center">
                 {navItems.map((item) => {
                   const active = item.key === current;
-
                   return (
-                    <Button key={item.href} variant={active ? "default" : "outline"} asChild>
-                      <Link href={item.href} className={cn(active && "shadow-sm")}>
-                        {item.label}
-                      </Link>
-                    </Button>
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cn(
+                        "relative px-3.5 py-2 text-[11px] tracking-[0.18em] uppercase transition-colors",
+                        active
+                          ? "text-foreground after:absolute after:inset-x-3.5 after:bottom-0 after:h-[2px] after:rounded-full after:bg-primary after:content-['']"
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {item.label}
+                    </Link>
                   );
                 })}
               </nav>
             </div>
+            {actions ? (
+              <div className="flex flex-wrap items-center gap-2">{actions}</div>
+            ) : null}
+          </div>
 
-            {actions ? <div className="flex flex-wrap gap-3">{actions}</div> : null}
+          {/* Divider */}
+          <div className="border-t border-border" />
+
+          {/* Title block */}
+          <div className="space-y-2">
+            {eyebrow ? (
+              <p className="text-[10px] tracking-[0.28em] text-muted-foreground uppercase">
+                {eyebrow}
+              </p>
+            ) : null}
+            <h1 className="text-3xl leading-snug font-semibold text-foreground md:text-4xl">
+              {title}
+            </h1>
+            {description ? (
+              <p className="max-w-2xl text-sm leading-6 text-muted-foreground">{description}</p>
+            ) : null}
           </div>
         </header>
 
