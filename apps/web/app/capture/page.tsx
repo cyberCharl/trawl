@@ -33,7 +33,8 @@ export default async function CapturePage({ searchParams }: CapturePageProps) {
   const duplicates = parseNumberParam(getParam(params.duplicates))
   const invalid = parseNumberParam(getParam(params.invalid))
   const error = getParam(params.error)
-  const apiBaseUrl = process.env.TRAWL_API_URL ?? "http://localhost:3100"
+  const publicApiBaseUrl =
+    process.env.TRAWL_PUBLIC_API_URL ?? process.env.TRAWL_API_URL ?? "http://localhost:3100"
 
   return (
     <AppShell
@@ -47,7 +48,7 @@ export default async function CapturePage({ searchParams }: CapturePageProps) {
             <Link href="/items">Open inbox</Link>
           </Button>
           <Button variant="outline" asChild>
-            <Link href={`${apiBaseUrl}/health`} target="_blank">
+            <Link href={`${publicApiBaseUrl}/health`} target="_blank">
               API health
             </Link>
           </Button>

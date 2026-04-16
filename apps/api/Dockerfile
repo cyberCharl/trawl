@@ -10,7 +10,7 @@ COPY apps/api/package.json apps/api/package.json
 COPY packages/typescript-config/package.json packages/typescript-config/package.json
 COPY packages/eslint-config/package.json packages/eslint-config/package.json
 
-RUN bun install
+RUN bun install --frozen-lockfile
 
 COPY apps/api/ apps/api/
 COPY packages/ packages/

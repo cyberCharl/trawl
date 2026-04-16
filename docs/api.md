@@ -10,6 +10,25 @@ The Trawl API is a Bun + Hono service backed by SQLite.
 - `POST /items` and `POST /items/batch` do **not** trigger processing automatically.
 - Processing is only queued by `POST /items/:id/process`.
 
+## Authentication
+
+Trawl currently uses static Bearer tokens configured from environment variables.
+
+- `API_KEY` adds one accepted token
+- `API_KEYS` adds optional extra accepted tokens as a comma-separated list
+- if both are set, all listed tokens are accepted
+- generate strong values, for example: `openssl rand -hex 32`
+- authenticated clients send one accepted token as:
+  - `Authorization: Bearer <TOKEN>`
+- there is no built-in token minting, database-backed credential store, expiry, or refresh flow yet
+
+This supports simple self-hosted patterns like:
+
+- one token for the web app server
+- one token for the Obsidian plugin
+- one token for scripts or automation
+- overlap during token rotation without immediate downtime
+
 ## Item shape returned by the API
 
 Normal item responses exclude `content_extract` and embedding data.

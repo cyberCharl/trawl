@@ -1,10 +1,8 @@
 {
   "extends": "@trawl/typescript-config/nextjs.json",
   "compilerOptions": {
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"],
-      "@trawl/ui/*": ["../../packages/ui/src/*"]
+      "@/*": ["./*"]
     },
     "plugins": [
       {

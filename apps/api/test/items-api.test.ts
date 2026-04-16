@@ -6,8 +6,10 @@ import { join } from "node:path";
 const tempDirectory = mkdtempSync(join(tmpdir(), "trawl-api-test-"));
 const databasePath = join(tempDirectory, "trawl-api.sqlite");
 const apiKey = "test-api-key";
+const secondaryApiKey = "test-obsidian-key";
 
 process.env.API_KEY = apiKey;
+process.env.API_KEYS = secondaryApiKey;
 process.env.DB_PATH = databasePath;
 process.env.OLLAMA_URL = "http://localhost:11434";
 process.env.SUMMARY_MODEL = "qwen3:8b";
@@ -29,9 +31,13 @@ beforeEach(() => {
   db.run("DELETE FROM tags");
 });
 
-async function apiRequest(path: string, init: RequestInit = {}): Promise<Response> {
+async function apiRequest(
+  path: string,
+  init: RequestInit = {},
+  token: string = apiKey,
+): Promise<Response> {
   const headers = new Headers(init.headers);
-  headers.set("Authorization", `Bearer ${apiKey}`);
+  headers.set("Authorization", `Bearer ${token}`);
 
   if (init.body && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
@@ -62,6 +68,22 @@ describe("items API", () => {
     const unauthorizedResponse = await app.request("/items");
     expect(unauthorizedResponse.status).toBe(401);
     expect(await unauthorizedResponse.json()).toEqual({ error: "Unauthorized" });
+  });
+
+  test("accepts any configured bearer token", async () => {
+    const response = await apiRequest(
+      "/items",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          url: "https://example.com/secondary-token",
+          source: "extension",
+        }),
+      },
+      secondaryApiKey,
+    );
+
+    expect(response.status).toBe(201);
   });
 
   test("captures a new item with capture-only semantics", async () => {

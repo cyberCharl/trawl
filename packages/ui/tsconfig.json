@@ -1,11 +1,6 @@
 {
   "extends": "@trawl/typescript-config/react-library.json",
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "@trawl/ui/*": ["./src/*"]
-    }
-  },
+  "compilerOptions": {},
   "include": ["."],
   "exclude": ["node_modules", "dist"]
 }

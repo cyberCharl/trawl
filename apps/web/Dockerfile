@@ -7,7 +7,7 @@ COPY apps/web/package.json apps/web/package.json
 COPY packages/ui/package.json packages/ui/package.json
 COPY packages/typescript-config/package.json packages/typescript-config/package.json
 COPY packages/eslint-config/package.json packages/eslint-config/package.json
-RUN bun install
+RUN bun install --frozen-lockfile
 
 FROM base AS build
 WORKDIR /app

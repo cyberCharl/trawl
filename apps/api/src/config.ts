@@ -1,4 +1,4 @@
-const DEFAULT_PORT = 3000;
+const DEFAULT_PORT = 3100;
 const DEFAULT_DB_PATH = "./data/trawl.db";
 const DEFAULT_OLLAMA_URL = "http://localhost:11434";
 const DEFAULT_SUMMARY_MODEL = "qwen3:8b";
@@ -20,12 +20,20 @@ function parsePort(value: string | undefined): number {
   return port;
 }
 
-function requireApiKey(value: string | undefined): string {
-  if (!value) {
-    throw new Error("API_KEY is required");
+function parseApiKeys(singleValue: string | undefined, multiValue: string | undefined): string[] {
+  const keys = Array.from(
+    new Set(
+      [singleValue ?? "", ...(multiValue?.split(/[\n,]/g) ?? [])]
+        .map((value) => value.trim())
+        .filter((value) => value.length > 0),
+    ),
+  );
+
+  if (keys.length === 0) {
+    throw new Error("Set API_KEY or API_KEYS with at least one bearer token");
   }
 
-  return value;
+  return keys;
 }
 
 function parseUnitFloat(value: string | undefined, fallback: number, name: string): number {
@@ -44,7 +52,7 @@ function parseUnitFloat(value: string | undefined, fallback: number, name: strin
 
 export const config = {
   port: parsePort(process.env.PORT),
-  apiKey: requireApiKey(process.env.API_KEY),
+  apiKeys: parseApiKeys(process.env.API_KEY, process.env.API_KEYS),
   dbPath: process.env.DB_PATH ?? DEFAULT_DB_PATH,
   ollamaUrl: process.env.OLLAMA_URL ?? DEFAULT_OLLAMA_URL,
   summaryModel: process.env.SUMMARY_MODEL ?? DEFAULT_SUMMARY_MODEL,

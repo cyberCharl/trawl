@@ -96,6 +96,81 @@ bun run build
 bun run build:obsidian-plugin
 ```
 
+## Self-hosted deployment with Docker Compose
+
+Trawl is intended to be self-hosted. In this repository, the supported deployment shape is:
+
+- `api` and `web` run together in Docker Compose
+- `web` talks to `api` over the internal Docker network at `http://api:3100`
+- host ports are bound to `127.0.0.1` so they are not exposed directly on the LAN or internet
+- external access is expected to come from a separate reverse proxy or private network service such as Tailscale
+
+### 1. Create runtime env files
+
+```bash
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env
+```
+
+### 2. Configure API tokens
+
+Generate one or more strong tokens:
+
+```bash
+openssl rand -hex 32
+```
+
+Then set either:
+
+- `API_KEY` for a single accepted token
+- `API_KEYS` for additional comma-separated accepted tokens
+
+Example `apps/api/.env`:
+
+```env
+PORT=3100
+API_KEY=replace-with-web-token
+API_KEYS=replace-with-obsidian-token,replace-with-automation-token
+DB_PATH=./data/trawl.db
+OLLAMA_URL=http://host.docker.internal:11434
+```
+
+Then configure each client with one accepted token:
+
+- `apps/web/.env` → `TRAWL_API_KEY=<one accepted token>`
+- Obsidian plugin → `API key = <one accepted token>`
+- other consumers → send `Authorization: Bearer <one accepted token>`
+
+### 3. Configure web URLs
+
+Example `apps/web/.env`:
+
+```env
+TRAWL_API_URL=http://api:3100
+TRAWL_PUBLIC_API_URL=https://your-api-private-url
+TRAWL_API_KEY=replace-with-web-token
+```
+
+Use:
+
+- `TRAWL_API_URL` for internal server-to-server calls from the web container to the API container
+- `TRAWL_PUBLIC_API_URL` for links rendered into the browser and for other private-network consumers such as the Obsidian plugin
+
+### 4. Start the stack
+
+```bash
+docker compose up -d --build
+```
+
+### 5. Reach the services
+
+On the host machine itself:
+
+- web: `http://127.0.0.1:3000`
+- api: `http://127.0.0.1:3100`
+
+From other trusted devices, expose those localhost-bound services through your chosen private networking layer.
+
 ## API testing
 
 The repository includes integration tests for the API covering:
